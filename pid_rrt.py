@@ -25,20 +25,21 @@ import random
 import numpy as np
 import pybullet as p
 import matplotlib.pyplot as plt
+import pkg_resources
 
 from gym_pybullet_drones.utils.enums import DroneModel, Physics
 from gym_pybullet_drones.envs.CtrlAviary import CtrlAviary
 from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
 from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.utils.utils import sync, str2bool
-from gym_pybullet_drones.planning.rrt3D import *
+from planning.rrt3D import *
 
 DEFAULT_DRONES = DroneModel("cf2x")
 DEFAULT_NUM_DRONES = 1
 DEFAULT_PHYSICS = Physics("pyb")
 DEFAULT_GUI = True
 DEFAULT_RECORD_VISION = False
-DEFAULT_PLOT = True
+DEFAULT_PLOT = False
 DEFAULT_USER_DEBUG_GUI = False
 DEFAULT_OBSTACLES = False
 DEFAULT_SIMULATION_FREQ_HZ = 240
@@ -74,38 +75,6 @@ def run(
     
     END_XYZS = np.array([[1,1,1] for i in range(num_drones)])
 
-    #### Initialize a trajectory ######################
-    """Using the 3D rrt to get the path, 
-    path is split up using linspace based on the num_wp
-    to match the number of positions in the TARGET_PATH to NUM_WP
-    """
-    PERIOD = 10
-    NUM_WP = control_freq_hz*PERIOD
-    
-    
-    raph = RRT_star(startpos,endpos,[(105., 10., 10.), (20., 20., 20.)], 1000,1, 0.05)
-    
-    path = np.array(dijkstra(raph))
-    num = int(NUM_WP/len(path))
-    TARGET_POS = np.zeros((len(path)*num,3))
-    
-    count = 0
-    for i in range(len(path)):
-        try:
-            target = np.linspace(path[i],path[i+1], num)
-            for j in range(len(target)):
-                TARGET_POS[count, :] = target[j]
-                count+=1
-        except:
-            try:
-                for k in range(NUM_WP-count):
-                    TARGET_POS[count, :] = endpos
-                    count+=1
-            except: 
-                continue
-    
-    wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
-    
     # # print(path)
     # #### Debug trajectory ######################################
     # #### Uncomment alt. target_pos in .computeControlFromState()
@@ -145,6 +114,89 @@ def run(
 
     #### Obtain the PyBullet Client ID from the environment ####
     PYB_CLIENT = env.getPyBulletClient()
+    
+    ### OUR CREATED OBSTACLES ###
+    p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/floor.urdf'),
+                [0, 0, -.01],
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/box.urdf'),
+                [-2, 2, 1.5],
+                p.getQuaternionFromEuler([0,0,0]),
+                physicsClientId=env.CLIENT
+                )
+    p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/box.urdf'),
+                [3, 2, 1.5],
+                p.getQuaternionFromEuler([0,0,0]),
+                physicsClientId=env.CLIENT
+                )
+    
+    #pillars
+    pillar_1 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/pillar.urdf'),
+                [20, 20, 5],
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    pillar_2 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/pillar.urdf'),
+                [-20, 20, 5],
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    pillar_3 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/pillar.urdf'),
+                [20, -20, 5],
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    pillar_4 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/pillar.urdf'),
+                [-20, -20, 5],
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    ceiling = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/floor.urdf'),
+                [0, 0, 10],
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    
+
+    #### Initialize a trajectory ######################
+    """Using the 3D rrt to get the path, 
+    path is split up using linspace based on the num_wp
+    to match the number of positions in the TARGET_PATH to NUM_WP
+    """
+    PERIOD = 10
+    NUM_WP = control_freq_hz*PERIOD
+    
+    
+    raph = RRT_star(startpos,endpos,[(105., 10., 10.), (20., 20., 20.)], 1000,1, 0.05)
+    
+    path = np.array(dijkstra(raph))
+    num = int(NUM_WP/len(path))
+    TARGET_POS = np.zeros((len(path)*num,3))
+    
+    count = 0
+    for i in range(len(path)):
+        try:
+            target = np.linspace(path[i],path[i+1], num)
+            for j in range(len(target)):
+                TARGET_POS[count, :] = target[j]
+                count+=1
+        except:
+            try:
+                for k in range(NUM_WP-count):
+                    TARGET_POS[count, :] = endpos
+                    count+=1
+            except: 
+                continue
+    wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
+
 
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=control_freq_hz,
