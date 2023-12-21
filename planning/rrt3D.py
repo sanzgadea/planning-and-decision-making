@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
 from collections import deque
 import mpl_toolkits
-
+from mpl_toolkits.mplot3d import Axes3D
 class Line():
     def __init__(self, p0, p1):
         self.p = np.array(p0)
@@ -179,13 +179,26 @@ def newVertex(randvex, nearvex, stepSize):
     newvex = (nearvex[0]+dirn[0], nearvex[1]+dirn[1], nearvex[2]+dirn[2])
     return newvex
 
+
+
+def plot_sphere(ax, center, radius):
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 100)
+
+    x = center[0] + radius * np.outer(np.cos(u), np.sin(v))
+    y = center[1] + radius * np.outer(np.sin(u), np.sin(v))
+    z = center[2] + radius * np.outer(np.ones(np.size(u)), np.cos(v))
+
+    ax.plot_surface(x, y, z, color='b', alpha=0.5)
+
 def plot(G, obstacles, radius, path=None):#'''Plot RRT, obstacles and shortest path'''
     px = [x for x, y, z in G.vertices]
     py = [y for x, y, z in G.vertices]
     pz = [z for x, y, z in G.vertices]
     ax = plt.figure().add_subplot(projection='3d')
 
-    
+    for obs in obstacles:
+        plot_sphere(ax,obs, radius)
 
     ax.scatter(px, py, pz, c='cyan')
     ax.scatter(G.startpos[0], G.startpos[1],G.startpos[2], c='black')
@@ -241,8 +254,8 @@ def dijkstra(G):# ''' Dijkstra algorithm for finding shortest path from start po
     
 if __name__ == '__main__':
     startpos = (0., 0., 0.)
-    endpos = (20., 0., 0.)
-    obstacles = [(109., 10., 10.), (200., 20., 20.)]
+    endpos = (3, 3., 3.)
+    obstacles = [(1.5, 1.5, 1.5), (6., 6., 6.)]
     n_iter = 520
     radius = 1
     stepSize = 0.1
