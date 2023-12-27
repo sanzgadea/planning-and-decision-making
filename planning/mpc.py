@@ -97,14 +97,14 @@ def mpc_control(vehicle, N, x_init, x_target):
         Q = np.diag([10, 10, 10, 1.0, 1.0, 1.0, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001])
         R = np.diag([1, 1., 1., 1.])
        
-        x_max, x_min, xdot_max, xdot_min = 50, -50, 1, -1 #specify max and min points for velocity coordinates and angles, coordinates are needed for the range of ppossible solutions
-        y_max, y_min, ydot_max, ydot_min = 50, -50, 1, -1
-        z_max, z_min, zdot_max, zdot_min = 50, -50, 1, -1
+        x_max, x_min, xdot_max, xdot_min = 50, -50, 1.5, -0.5 #specify max and min points for velocity coordinates and angles, coordinates are needed for the range of ppossible solutions
+        y_max, y_min, ydot_max, ydot_min = 50, -50, 1.5, -0.5
+        z_max, z_min, zdot_max, zdot_min = 50, -50, 1.5, -0.5
 
 
-        phi_max, phi_min, phidot_max, phidot_min = 50, -50, 1, -1   #50*180/np.pi,-50*180/np.pi, 5*180/np.pi,-5*180/np.pi
-        theta_max, theta_min, thetadot_max, thetadot_min = 50, -50, 1, -1   #50*180/np.pi,-50*180/np.pi, 5*180/np.pi,-5*180/np.pi
-        psi_max, psi_min, psidot_max, psidot_min = 50, -50, 1, -1   #50*180/np.pi,-50*180/np.pi, 5*180/np.pi,-5*180/np.pi
+        phi_max, phi_min, phidot_max, phidot_min = 15*180/np.pi,-15*180/np.pi, 0.1*180/np.pi,-0.5*180/np.pi
+        theta_max, theta_min, thetadot_max, thetadot_min = 15*180/np.pi,-15*180/np.pi, 0.5*180/np.pi,-0.5*180/np.pi
+        psi_max, psi_min, psidot_max, psidot_min = 15*180/np.pi,-15*180/np.pi, 0.5*180/np.pi,-0.5*180/np.pi
 
         constraints += [x[:, k] >= [x_min, y_min, z_min, xdot_min, ydot_min, zdot_min, phi_min, theta_min, psi_min, phidot_min, thetadot_min, psidot_min]]
         constraints += [x[:, k] <= [x_max, y_max, z_max, xdot_max, ydot_max, zdot_max, phi_max, theta_max, psi_max, phidot_max, thetadot_max, psidot_max]]
@@ -156,6 +156,7 @@ def simulate(vehicle, dt, T, x_init, x_target, plan_length, control_func, plot_t
     # Function that plots the trajectories.
     # The plot is stored with the name of the first parameter
     # print(x_real.shape)
+    print(x_real.shape)
     return x_real, u_real, x_all, timesteps, theta_all
 
 
@@ -306,12 +307,12 @@ def plot_trajectorie(filename, x, u, T):
 
 if __name__ == "__main__":
     # Problem parameters
-    dt = 0.1                                  # Sampling period
+    dt =0.1                                  # Sampling period
     T = 75                                      # Steps to simulate
     N = 20
 
     x_init = np.array([0, 0, 0, 0, 0, 0,0,0,0,0,0,0])      #x,y,z, x_Dot, y_Dot, z_Dot, phi, theta, psi, phi_Dot, theta_dot, psi_dot
-    x_end = np.array([5, 1, 1,  0, 0, 0,0,0,0,0,0,0])              # Dummy for this exercise
+    x_end = np.array([3, 3, 3,  0, 0, 0,0,0,0,0,0,0])              # Dummy for this exercise
 
     # Get the vehicle dynamics
     m=1
@@ -327,7 +328,7 @@ if __name__ == "__main__":
         print(states[i])
 
     print("States:", states)#check if it reaches the final state
-
+    
     # print("Inputs:", inputs)
     # print("Plans:", plans)
     # print("Timesteps:", timesteps)
