@@ -123,12 +123,15 @@ def run(
     ### Obstacle environment ###
     obstacle_ids = create_boxes_1(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
-    
+    obstacle_info = {}
     for i in range(len(obstacle_ids)):
+        # Take into account that the relation beween the position and size of the box is the following: position is the coordinate of the 
+        # center of the box (so half width, half height and half depth)
         shape = np.round(p.getCollisionShapeData(obstacle_ids[i], -1)[0][3], 6) # getting the information on the shape of the obstacles
         pos, orn = p.getBasePositionAndOrientation(obstacle_ids[i])
+        obstacle_info[obstacle_ids[i]] = [obstacle_ids[i], pos, shape, orn] #INFO: Obstacle ID (float), position tuple(x, y, x, size tuple (x, y, x) and orientation tuple(quaternions)
         print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
-    
+    # print(obstacle_info)
     
 
     #### Initialize a trajectory ######################
