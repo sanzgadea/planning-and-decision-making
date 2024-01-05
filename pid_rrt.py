@@ -116,9 +116,20 @@ def run(
     #### Obtain the PyBullet Client ID from the environment ####
     PYB_CLIENT = env.getPyBulletClient()
     
-    ### Obstacle environment
-    create_boxes_1(p, env)
 
+
+
+
+    ### Obstacle environment ###
+    obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    print("obstacle_ids: ", obstacle_ids)
+    
+    for i in range(len(obstacle_ids)):
+        shape = np.round(p.getCollisionShapeData(obstacle_ids[i], -1)[0][3], 6) # getting the information on the shape of the obstacles
+        pos, orn = p.getBasePositionAndOrientation(obstacle_ids[i])
+        print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
+    
+    
 
     #### Initialize a trajectory ######################
     """Using the 3D rrt to get the path, 
@@ -129,7 +140,7 @@ def run(
     NUM_WP = control_freq_hz*PERIOD
     
     
-    raph = RRT_star(startpos,endpos,[(105., 10., 10.), (20., 20., 20.)], 1000,1, 0.05)
+    raph = RRT_star(startpos,endpos,[(105., 10., 10.), (20., 20., 20.)], 1000,1, 0.05) # startpos,endpos, obstacles, n_iter, radius, stepSize
     
     path = np.array(dijkstra(raph))
     num = int(NUM_WP/len(path))

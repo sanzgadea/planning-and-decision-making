@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<robot name="test.urdf">
+  <link name="baseLink">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+       <mass value="100000."/>
+       <inertia ixx="1000" ixy="0" ixz="0" iyy="1000" iyz="0" izz="1000"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="1." />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="1." />
+      </geometry>
+    </collision>  
+  </link>
+</robot>

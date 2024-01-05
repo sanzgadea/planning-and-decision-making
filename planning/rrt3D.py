@@ -200,19 +200,19 @@ def plot(G, obstacles, radius, path=None):#'''Plot RRT, obstacles and shortest p
     for obs in obstacles:
         plot_sphere(ax,obs, radius)
 
-    ax.scatter(px, py, pz, c='cyan')
+    ax.scatter(px, py, pz, c='cyan', s=5)
     ax.scatter(G.startpos[0], G.startpos[1],G.startpos[2], c='black')
     ax.scatter(G.endpos[0], G.endpos[1],G.endpos[2], c='black')
     # for edge in G.edges:
     #     print(edge)
     lines = [(G.vertices[edge[0]], G.vertices[edge[1]]) for edge in G.edges]
     
-    lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(lines,zorder=3, colors='green', linewidths=1)
+    lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(lines,zorder=3, colors='green', linewidths=.5)
     ax.add_collection(lc)
 
     if path is not None:
         paths = [(path[i], path[i+1]) for i in range(len(path)-1)]
-        lc2 = mpl_toolkits.mplot3d.art3d.Line3DCollection(paths, colors='blue', linewidths=3)
+        lc2 = mpl_toolkits.mplot3d.art3d.Line3DCollection(paths, colors='red', linewidths=5)
         ax.add_collection(lc2)
 
     ax.autoscale()
@@ -253,12 +253,12 @@ def dijkstra(G):# ''' Dijkstra algorithm for finding shortest path from start po
 
     
 if __name__ == '__main__':
-    startpos = (0., 0., 0.)
-    endpos = (3, 3., 3.)
-    obstacles = [(1.5, 1.5, 1.5), (6., 6., 6.)]
-    n_iter = 520
-    radius = 1
-    stepSize = 0.1
+    startpos = (0, 0, 0)
+    endpos = (0, 0, 3)
+    obstacles = [(2., 2., 2.), (6., 6., 6.)]
+    n_iter = 500
+    radius = 2
+    stepSize = 0.2
 
     G = RRT_star(startpos,endpos, obstacles, n_iter, radius, stepSize)
 
@@ -267,8 +267,10 @@ if __name__ == '__main__':
     # # G = RRT(startpos, endpos, obstacles, n_iter, radius, stepSize)
 
     if G.success:
+        print("A path has been found")
         path = dijkstra(G)
         print(path)
         plot(G, obstacles, radius, path)
     else:
+        print("A path was not found")
         plot(G, obstacles, radius)

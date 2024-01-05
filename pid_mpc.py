@@ -98,7 +98,7 @@ def run(
     PYB_CLIENT = env.getPyBulletClient()
     
     ### Obstacle environment
-    create_boxes_1(p, env)
+    create_boxes_1(env)
 
 
     #### Initialize a trajectory ######################
