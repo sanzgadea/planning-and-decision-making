@@ -48,7 +48,7 @@ def create_warehouse_skeleton(env):
                 useFixedBase=True,
                 physicsClientId=env.CLIENT
                 )
-    return [floor, ceiling, pillar_1, pillar_2, pillar_3, pillar_4]
+    return [floor]
 
 
 def create_boxes_1(env):
@@ -66,6 +66,34 @@ def create_boxes_1(env):
                 physicsClientId=env.CLIENT
                 )
     return base_warehouse + [box_1, box_2]
+
+def create_boxes_2(env):
+    ### Creates 2 boxes in the warehouse ###
+    base_warehouse = create_warehouse_skeleton(env)
+    # spheres = create_sphere(env)
+    # box_1 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/box.urdf'),
+    #             [-2, 2, 1.5],
+    #             p.getQuaternionFromEuler([0,0,0]),
+    #             physicsClientId=env.CLIENT
+    #             )
+    box_1 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/box_20x2x9.urdf'),
+                [0, 1.5, 4.5],
+                p.getQuaternionFromEuler([0,0,0]),
+                physicsClientId=env.CLIENT
+                )
+    box_2 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/box_20x2x9.urdf'),
+                [0, -1.5, 4.5],
+                p.getQuaternionFromEuler([0,0,0]),
+                physicsClientId=env.CLIENT
+                )
+    box_3 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/box_1x2x9.urdf'),
+                [9.5, -3.5, 4.5],
+                p.getQuaternionFromEuler([0,0,0]),
+                physicsClientId=env.CLIENT
+                )
+    return base_warehouse + [box_1, box_2, box_3]
+
+
 
 def create_sphere(env):
     ### Creates 2 boxes in the warehouse ###
