@@ -11,6 +11,10 @@ from matplotlib import collections  as mc
 from collections import deque
 import mpl_toolkits
 from mpl_toolkits.mplot3d import Axes3D
+import mpl_toolkits.mplot3d.art3d as art3d
+import heapq
+from collections import deque
+
 
 class Line():
     def __init__(self, p0, p1):
@@ -118,26 +122,24 @@ class Graph:
         posz = self.startpos[2] - (self.sy / 2.) + rz * self.sy * 2
         return posx, posy, posz
     
-def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):#''' RRT star algorithm '''
+def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
     print(startpos, endpos, obstacles, dimensions)
     G = Graph(startpos, endpos)
 
     for _ in range(n_iter):
         randvex = G.randomPosition()
-        
-        # if isInObstacle(randvex, obstacles, radius):
-        #     continue
+
         if isInObstacleBox(randvex, obstacles, dimensions):
             continue
-        nearvex, nearidx = nearest(G, randvex, obstacles, radius)
+
+        nearvex, nearidx = nearest(G, randvex, obstacles, dimensions)
         if nearvex is None:
             continue
 
         newvex = newVertex(randvex, nearvex, stepSize)
-
         newidx = G.add_vex(newvex)
         dist = distance(newvex, nearvex)
-        
+
         G.add_edge(newidx, nearidx, dist)
         G.distances[newidx] = G.distances[nearidx] + dist
 
@@ -147,12 +149,12 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):#''' RRT
                 continue
 
             dist = distance(vex, newvex)
-            if dist > radius:
+            if isInObstacleBox(vex, newvex, dimensions):
                 continue
 
             line = Line(vex, newvex)
-            # if isThruObstacle(line, obstacles, radius):
-            #     continue
+            if isThruObstacle(line, obstacles, dimensions):
+                continue
 
             idx = G.vex2idx[vex]
             if G.distances[newidx] + dist < G.distances[idx]:
@@ -160,19 +162,17 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):#''' RRT
                 G.distances[idx] = G.distances[newidx] + dist
 
         dist = distance(newvex, G.endpos)
-        if dist < 2 * radius:
+        if isInObstacleBox(newvex, G.endpos, dimensions):
             endidx = G.add_vex(G.endpos)
             G.add_edge(newidx, endidx, dist)
-            try:
-                G.distances[endidx] = min(G.distances[endidx], G.distances[newidx]+dist)
-            except:
-                G.distances[endidx] = G.distances[newidx]+dist
+            G.distances[endidx] = min(G.distances.get(endidx, float('inf')), G.distances[newidx]+dist)
 
             G.success = True
             print('success')
-            # break
+            break
     return G
-def nearest(G, vex, obstacles, radius):
+
+def nearest(G, vex, obstacles, dimensions):
     Nvex = None
     Nidx = None
     minDist = float("inf")
@@ -189,6 +189,7 @@ def nearest(G, vex, obstacles, radius):
             Nvex = v
 
     return Nvex, Nidx
+
 
 
 def newVertex(randvex, nearvex, stepSize):
@@ -211,56 +212,70 @@ def plot_sphere(ax, center, radius):
 
     ax.plot_surface(x, y, z, color='b', alpha=0.5)
 
-def plot(G, obstacles, radius, path=None):#'''Plot RRT, obstacles and shortest path'''
+
+def plot(G, obstacles, dimensions, path=None):
     px = [x for x, y, z in G.vertices]
     py = [y for x, y, z in G.vertices]
     pz = [z for x, y, z in G.vertices]
     ax = plt.figure().add_subplot(projection='3d')
 
-    for obs in obstacles:
-        plot_sphere(ax,obs, radius)
+    for obs, dims in zip(obstacles, dimensions):
+        plot_box(ax, obs, dims)
 
     ax.scatter(px, py, pz, c='cyan', s=5)
-    ax.scatter(G.startpos[0], G.startpos[1],G.startpos[2], c='black')
-    ax.scatter(G.endpos[0], G.endpos[1],G.endpos[2], c='black')
-    # for edge in G.edges:
-    #     print(edge)
+    ax.scatter(G.startpos[0], G.startpos[1], G.startpos[2], c='black')
+    ax.scatter(G.endpos[0], G.endpos[1], G.endpos[2], c='black')
+
     lines = [(G.vertices[edge[0]], G.vertices[edge[1]]) for edge in G.edges]
     
-    lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(lines,zorder=3, colors='green', linewidths=.5)
+    lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5)
     ax.add_collection(lc)
 
     if path is not None:
         paths = [(path[i], path[i+1]) for i in range(len(path)-1)]
-        lc2 = mpl_toolkits.mplot3d.art3d.Line3DCollection(paths, colors='red', linewidths=5)
+        lc2 = art3d.Line3DCollection(paths, colors='red', linewidths=5)
         ax.add_collection(lc2)
 
     ax.autoscale()
     ax.margins(0.1)
     plt.show()
 
-def dijkstra(G):# ''' Dijkstra algorithm for finding shortest path from start position to end.'''
+def plot_box(ax, center, dimensions):
+    extra = 0.20  # margin for collision of the physical drone with the boxes
+    half_dimensions = np.array(dimensions) / 2.0 + np.array([extra, extra, extra])
+    
+    min_bound = np.array(center) - half_dimensions
+    max_bound = np.array(center) + half_dimensions
+    
+    x, y, z = zip(min_bound, max_bound)
+    ax.bar3d(x[0], y[0], z[0], x[1]-x[0], y[1]-y[0], z[1]-z[0], color='gray', alpha=0.5)
+
+
+def dijkstra(G):
+    if G.startpos not in G.vex2idx or G.endpos not in G.vex2idx:
+        return None  # Start or end position not in the graph
+
     srcIdx = G.vex2idx[G.startpos]
     dstIdx = G.vex2idx[G.endpos]
-    print(G.endpos)
 
-    # build dijkstra
     nodes = list(G.neighbors.keys())
     dist = {node: float('inf') for node in nodes}
     prev = {node: None for node in nodes}
     dist[srcIdx] = 0
 
-    while nodes:
-        curNode = min(nodes, key=lambda node: dist[node])
-        nodes.remove(curNode)
-        if dist[curNode] == float('inf'):
+    priority_queue = [(0, srcIdx)]
+    while priority_queue:
+        current_distance, currentNode = heapq.heappop(priority_queue)
+
+        if currentNode == dstIdx:
             break
 
-        for neighbor, cost in G.neighbors[curNode]:
-            newCost = dist[curNode] + cost
-            if newCost < dist[neighbor]:
-                dist[neighbor] = newCost
-                prev[neighbor] = curNode
+        for neighbor, cost in G.neighbors[currentNode]:
+            alternativeDistance = current_distance + cost
+            if alternativeDistance < dist[neighbor]:
+                dist[neighbor] = alternativeDistance
+                prev[neighbor] = currentNode
+                heapq.heappush(priority_queue, (alternativeDistance, neighbor))
 
     # retrieve path
     path = deque()
@@ -269,18 +284,19 @@ def dijkstra(G):# ''' Dijkstra algorithm for finding shortest path from start po
         path.appendleft(G.vertices[curNode])
         curNode = prev[curNode]
     path.appendleft(G.vertices[curNode])
+
     return list(path)
 
     
 if __name__ == '__main__':
     startpos = (0., 0., 0.)
-    endpos = (3, 3., 3.)
+    endpos = (3., 3., 3.)
     obstacles = [(1.5, 1.5, 1.5), (6., 6., 6.)]
-    n_iter = 520
+    n_iter = 620
     radius = 1
     dimensions = np.array([[1,1,1], [2.5,2.5,2.5]])
     print(dimensions)
-    stepSize = 0.1
+    stepSize = 0.8
 
     G = RRT_star(startpos,endpos, obstacles, n_iter, dimensions, stepSize)
 
@@ -292,7 +308,7 @@ if __name__ == '__main__':
         print("A path has been found")
         path = dijkstra(G)
         print(path)
-        plot(G, obstacles, radius, path)
+        plot(G, obstacles, dimensions, path)
     else:
         print("A path was not found")
-        plot(G, obstacles, radius)
+        plot(G, obstacles, dimensions)

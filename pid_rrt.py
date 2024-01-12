@@ -66,10 +66,10 @@ def run(
         ):
     #### Initialize the simulation #############################
     H = .1
-    H_STEP = .05
+    H_STEP = 0.5
     R = .3
-    startpos = (0., 0., 0.) 
-    endpos = (3,3,3.)
+    startpos = (0., 0., 1.) 
+    endpos = (10., 10. , 3.)
 
     INIT_XYZS = np.array([[0,0,0] for i in range(num_drones)])
     INIT_RPYS = np.array([[0, 0,  i * (np.pi/2)/num_drones] for i in range(num_drones)])
@@ -124,6 +124,7 @@ def run(
     obstacle_ids = create_boxes_1(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
+
     for i in range(len(obstacle_ids)):
         # Take into account that the relation beween the position and size of the box is the following: position is the coordinate of the 
         # center of the box (so half width, half height and half depth)
@@ -132,8 +133,11 @@ def run(
         obstacle_info[obstacle_ids[i]] = [obstacle_ids[i], pos, shape, orn] #INFO: Obstacle ID (float), position tuple(x, y, x, size tuple (x, y, x) and orientation tuple(quaternions)
         print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
     # print(obstacle_info)
-    
-
+    positions = []
+    dimensions=[] 
+    for id in obstacle_info:
+        positions.append(list(obstacle_info[id][1]))
+        dimensions.append(list(obstacle_info[id][2]))
     #### Initialize a trajectory ######################
     """Using the 3D rrt to get the path, 
     path is split up using linspace based on the num_wp
@@ -142,10 +146,20 @@ def run(
     PERIOD = 10
     NUM_WP = control_freq_hz*PERIOD
     
-    
-    raph = RRT_star(startpos,endpos,[(105., 10., 10.), (20., 20., 20.)], 1000,1, 0.05) # startpos,endpos, obstacles, n_iter, radius, stepSize
+    print()
+    print("Dimensions:")
+    print(dimensions)
+    print()
+    print("Positions")
+    print(positions)
+
+
+    raph = RRT_star(startpos,endpos,positions, 1000, dimensions, H_STEP) # startpos,endpos, obstacles, n_iter, dimensions, stepSize
     
     path = np.array(dijkstra(raph))
+    print("#################")
+    print(path)
+    print("#################")
     num = int(NUM_WP/len(path))
     TARGET_POS = np.zeros((len(path)*num,3))
     
