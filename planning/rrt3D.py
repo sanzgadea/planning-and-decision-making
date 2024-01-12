@@ -1,9 +1,9 @@
-
 '''
 MIT License
 3D rrt edited for PDM inspired by Copyright (c) 2019 Fanjin Zeng
 This work is licensed under the terms of the MIT license, see <https://opensource.org/licenses/MIT>.  
 '''
+
 import numpy as np
 from random import random
 import matplotlib.pyplot as plt
@@ -11,50 +11,69 @@ from matplotlib import collections  as mc
 from collections import deque
 import mpl_toolkits
 from mpl_toolkits.mplot3d import Axes3D
+
 class Line():
     def __init__(self, p0, p1):
         self.p = np.array(p0)
         self.dirn = np.array(p1) - np.array(p0)
         self.dist = np.linalg.norm(self.dirn)
-        self.dirn /= self.dist # normalize
+        self.dirn = self.dirn / self.dist if self.dist != 0 else np.zeros_like(self.dirn)
 
     def path(self, t):
         return self.p + t * self.dirn
-    
+
 def distance(x, y):
-    
     return np.linalg.norm(np.array(x) - np.array(y))
 
-
 def isInObstacle(vex, obstacles, radius):
-    for obs in obstacles:
-        # print(obs,vex)
-        if distance(obs, vex) < radius:
+    obstacles = np.array(obstacles)
+    distances = np.linalg.norm(obstacles - vex, axis=1)
+    return np.any(distances < radius)
+
+def isInObstacleBox(point, centers, dimensions):
+    point = np.array(point)
+    for center, dim in zip(centers, dimensions):
+        half_dim = np.array(dim) / 2.0 + 0.20  # Including margin
+        min_bound = center - half_dim
+        max_bound = center + half_dim
+        if np.all((point >= min_bound) & (point <= max_bound)):
             return True
     return False
 
-def Intersection(line, center, radius): #''' Check line-sphere (circle) intersection '''
+def Intersection(line, center, radius):
     a = np.dot(line.dirn, line.dirn)
     b = 2 * np.dot(line.dirn, line.p - center)
-    c = np.dot(line.p - center, line.p - center) - radius * radius
+    c = np.dot(line.p - center, line.p - center) - radius ** 2
+    discriminant = b ** 2 - 4 * a * c
 
-    discriminant = b * b - 4 * a * c
     if discriminant < 0:
         return False
 
-    t1 = (-b + np.sqrt(discriminant)) / (2 * a)
-    t2 = (-b - np.sqrt(discriminant)) / (2 * a)
+    sqrt_discriminant = np.sqrt(discriminant)
+    t1 = (-b + sqrt_discriminant) / (2 * a)
+    t2 = (-b - sqrt_discriminant) / (2 * a)
 
-    if (t1 < 0 and t2 < 0) or (t1 > line.dist and t2 > line.dist):
-        return False
+    return (0 <= t1 <= line.dist) or (0 <= t2 <= line.dist)
 
-    return True
 
-def isThruObstacle(line, obstacles, radius):
-    for obs in obstacles:
-        if Intersection(line, obs, radius):
+def isThruObstacle(line, centers, dimensions):
+    for center, dim in zip(centers, dimensions):
+        if IntersectionBox(line, center, dim):
             return True
     return False
+
+def IntersectionBox(line, center, dimension):
+    extra = 0.20  # Margin for collision
+    half_dim = np.array(dimension) / 2.0 + extra
+    min_bound = center - half_dim
+    max_bound = center + half_dim
+    tmin = (min_bound - line.p) / line.dirn
+    tmax = (max_bound - line.p) / line.dirn
+    tmin, tmax = np.minimum(tmin, tmax), np.maximum(tmin, tmax)
+    t_enter = np.max(tmin)
+    t_exit = np.min(tmax)
+    return (t_enter <= t_exit) and (t_exit > 0)
+
    
 class Graph:
     def __init__(self, startpos, endpos):
@@ -99,16 +118,17 @@ class Graph:
         posz = self.startpos[2] - (self.sy / 2.) + rz * self.sy * 2
         return posx, posy, posz
     
-def RRT_star(startpos, endpos, obstacles, n_iter, radius, stepSize):#''' RRT star algorithm '''
-    print(startpos, endpos)
+def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):#''' RRT star algorithm '''
+    print(startpos, endpos, obstacles, dimensions)
     G = Graph(startpos, endpos)
 
     for _ in range(n_iter):
         randvex = G.randomPosition()
         
-        if isInObstacle(randvex, obstacles, radius):
+        # if isInObstacle(randvex, obstacles, radius):
+        #     continue
+        if isInObstacleBox(randvex, obstacles, dimensions):
             continue
-
         nearvex, nearidx = nearest(G, randvex, obstacles, radius)
         if nearvex is None:
             continue
@@ -131,8 +151,8 @@ def RRT_star(startpos, endpos, obstacles, n_iter, radius, stepSize):#''' RRT sta
                 continue
 
             line = Line(vex, newvex)
-            if isThruObstacle(line, obstacles, radius):
-                continue
+            # if isThruObstacle(line, obstacles, radius):
+            #     continue
 
             idx = G.vex2idx[vex]
             if G.distances[newidx] + dist < G.distances[idx]:
@@ -159,7 +179,7 @@ def nearest(G, vex, obstacles, radius):
 
     for idx, v in enumerate(G.vertices):
         line = Line(v, vex)
-        if isThruObstacle(line, obstacles, radius):
+        if isThruObstacle(line, obstacles, dimensions):
             continue
 
         dist = distance(v, vex)
@@ -253,14 +273,16 @@ def dijkstra(G):# ''' Dijkstra algorithm for finding shortest path from start po
 
     
 if __name__ == '__main__':
-    startpos = (0, 0, 0)
-    endpos = (0, 0, 3)
-    obstacles = [(2., 2., 2.), (6., 6., 6.)]
-    n_iter = 500
-    radius = 2
-    stepSize = 0.2
+    startpos = (0., 0., 0.)
+    endpos = (3, 3., 3.)
+    obstacles = [(1.5, 1.5, 1.5), (6., 6., 6.)]
+    n_iter = 520
+    radius = 1
+    dimensions = np.array([[1,1,1], [2.5,2.5,2.5]])
+    print(dimensions)
+    stepSize = 0.1
 
-    G = RRT_star(startpos,endpos, obstacles, n_iter, radius, stepSize)
+    G = RRT_star(startpos,endpos, obstacles, n_iter, dimensions, stepSize)
 
 
     # G = RRT_star(startpos, endpos, obstacles, n_iter, radius, stepSize)
