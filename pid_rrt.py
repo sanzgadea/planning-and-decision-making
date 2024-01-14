@@ -80,7 +80,7 @@ def run(
     PYB_CLIENT = env.getPyBulletClient()
     
     ### Obstacle environment ###
-    obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    obstacle_ids = create_boxes_2(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
 
