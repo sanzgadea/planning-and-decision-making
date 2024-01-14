@@ -34,6 +34,7 @@ from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.utils.utils import sync, str2bool
 from planning.rrt3D import *
 from Environments.Obstacle_creation import *
+from planning.mpc import *
 
 DEFAULT_DRONES = DroneModel("cf2p")
 DEFAULT_NUM_DRONES = 1
@@ -67,7 +68,7 @@ def run(
     #### Initialize the simulation #############################
     H = .1
     H_STEP = .5
-    iterations = 3000
+    iterations = 1000
     R = .3
     startpos = (0., 0.,1.)
     endpos = (5.,-5.,2.)
@@ -166,25 +167,67 @@ def run(
 
     path = np.array(dijkstra(G))
     num = int(NUM_WP/len(path))
+    print(num)
     TARGET_POS = np.zeros((len(path)*num,3))
     
+
+    PERIOD = 10
+    NUM_WP = control_freq_hz*PERIOD
+    dt = 1/control_freq_hz
+    N = 5
+    T = 10
+    m=1
+    I_x,I_y,I_z = 1, 1, 1
+    
+    vehicle = drone_properties(dt, m, I_x, I_y, I_z)
+    x_init = np.zeros((12))
+    x_end = np.zeros((12))
+    new_path,new_rpys,new_vel, new_rpydot = [],[],[],[]
+    # Simulate the result
+   
+    for i in range(len(path)-2):
+        x_init[:3] = path[i]
+        x_end[:3] = path[i+2]
+        controller = lambda x_init : mpc_control(vehicle, N, x_init, x_end)
+        states, inputs, plans, timesteps, theta_Al = simulate(vehicle, dt, T, x_init, x_end, N, controller, plot_trajectories=False)
+        states = states.T
+        print(states)
+        new_path.append(tuple(states[1,0:3]))
+        new_rpys.append(tuple(states[1,6:9]))
+        new_vel.append(tuple(states[1,3:6]))
+        new_rpydot.append(tuple(states[1,9:12]))
+
+    
+    num = int(NUM_WP/len(new_path))
+    TARGET_POS = np.zeros((len(new_path)*num,3))
+    TARGET_RPYS = np.zeros((len(new_rpys)*num,3))
+    TARGET_VEL = np.zeros((len(new_vel)*num,3))
+    TARGET_rpydot = np.zeros((len(new_rpys)*num,3))
+    
+    print(new_path, new_rpys)
+    path = new_path
     count = 0
     for i in range(len(path)):
         try:
-            target = np.linspace(path[i],path[i+1], num)
-            for j in range(len(target)):
-                TARGET_POS[count, :] = target[j]
+            target_XYZ = np.linspace(path[i],path[i+1], num)
+            target_RPY = np.linspace(new_rpys[i],new_rpys[i+1], num)
+            for j in range(len(target_XYZ)):
+                TARGET_POS[count, :] = target_XYZ[j]
+                TARGET_RPYS[count,:] = target_RPY[j]
+                
+                
                 count+=1
         except:
             try:
                 for k in range(NUM_WP-count):
                     TARGET_POS[count, :] = endpos
+                    TARGET_RPYS[count,:] = (0,0,0)
                     count+=1
             except: 
                 continue
     wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
-
-
+    for i in TARGET_RPYS:
+        print(i)
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=control_freq_hz,
                     num_drones=num_drones,
@@ -213,8 +256,8 @@ def run(
                                                                     state=obs[j],
                                                                     #target_pos=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2]]),
                                                                     target_pos=INIT_XYZS[j, :] + TARGET_POS[wp_counters[j], :],
-                                                                    target_rpy=INIT_RPYS[j, :]
-                                                                    )
+                                                                    target_rpy=TARGET_RPYS[i])
+            print("action",action)
 
         #### Go to the next way point and loop #####################
         for j in range(num_drones):
