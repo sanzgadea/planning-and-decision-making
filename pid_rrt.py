@@ -18,7 +18,7 @@ from gym_pybullet_drones.utils.utils import sync, str2bool
 from planning.rrt3D import *
 from Environments.Obstacle_creation import *
 
-DEFAULT_DRONES = DroneModel("cf2p")
+DEFAULT_DRONES = DroneModel("cf2x")
 DEFAULT_NUM_DRONES = 1
 DEFAULT_PHYSICS = Physics("pyb")
 DEFAULT_GUI = True
@@ -32,7 +32,7 @@ DEFAULT_DURATION_SEC = 30
 DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
-def run(
+def run(case = 2,
         drone=DEFAULT_DRONES,
         num_drones=DEFAULT_NUM_DRONES,
         physics=DEFAULT_PHYSICS,
@@ -50,11 +50,18 @@ def run(
     
     #### Initialize the simulation #############################
     H = .1
-    H_STEP = .5
-    iterations = 3000
     R = .3
     startpos = (0., 0.,1.)
-    endpos = (5.,-5.,2.)
+    if case == 1:
+        iterations = 500
+        endpos = (-5.,5.,2.) #env 1
+    if case == 2:
+        iterations = 2000
+        endpos = (5.,-5.,2.) #env 2
+    if case == 3:
+        iterations = 1500
+        endpos = (8.5, -8, 2.5) #env 3
+    
     H_STEP = np.sqrt((np.linalg.norm(np.array(startpos)-np.array(endpos)))**2)/10 # setting RRT resolution
 
     INIT_XYZS = np.array([[0, 0,  0] for i in range(num_drones)])
@@ -80,7 +87,12 @@ def run(
     PYB_CLIENT = env.getPyBulletClient()
     
     ### Obstacle environment ###
-    obstacle_ids = create_boxes_2(env) # Storing id of obstacles
+    if case == 1:
+        obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    if case == 2:
+        obstacle_ids = create_boxes_2(env) # Storing id of obstacles
+    if case == 3:
+        obstacle_ids = create_boxes_3(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
 
@@ -92,6 +104,20 @@ def run(
         obstacle_info[obstacle_ids[i]] = [obstacle_ids[i], pos, shape, orn] #INFO: Obstacle ID (float), position tuple(x, y, x, size tuple (x, y, x) and orientation tuple(quaternions)
         print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
     # print(obstacle_info)
+    # Start and end visual indicators
+    p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/waypoint.urdf'),
+                startpos,
+                p.getQuaternionFromEuler([0,0,0]),
+                useFixedBase=True,
+                physicsClientId=env.CLIENT
+                )
+    p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/target.urdf'),
+                    endpos,
+                    p.getQuaternionFromEuler([0,0,0]),
+                    useFixedBase=True,
+                    physicsClientId=env.CLIENT
+                    )
+    
     positions = []
     dimensions=[] 
     for id in obstacle_info:
@@ -239,4 +265,7 @@ if __name__ == "__main__":
     parser.add_argument('--colab',              default=DEFAULT_COLAB,              type=bool,          help='Whether example is being run by a notebook (default: "False")', metavar='')
     ARGS = parser.parse_args()
 
-    run(**vars(ARGS))
+    ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
+    case = 2
+    ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
+    run(case = case, **vars(ARGS))
