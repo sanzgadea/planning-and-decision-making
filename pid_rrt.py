@@ -1,3 +1,5 @@
+"Based on examle pid of the gym_pybullet_drones"
+
 import os
 import time
 import argparse

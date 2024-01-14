@@ -33,7 +33,7 @@ DEFAULT_DURATION_SEC = 30
 DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
-def run(
+def run(case=2, 
         drone=DEFAULT_DRONES,
         num_drones=DEFAULT_NUM_DRONES,
         physics=DEFAULT_PHYSICS,
@@ -51,11 +51,17 @@ def run(
     
     #### Initialize the simulation #############################
     H = .1
-    H_STEP = .5
-    iterations = 3000
     R = .3
     startpos = (0., 0.,1.)
-    endpos = (5.,-5.,2.)
+    if case == 1:
+        iterations = 500
+        endpos = (-5.,5.,2.) #env 1
+    if case == 2:
+        iterations = 3000
+        endpos = (5.,-5.,2.) #env 2
+    if case == 3:
+        iterations = 1500
+        endpos = (8.5, -8, 2.5) #env 3
     H_STEP = np.sqrt((np.linalg.norm(np.array(startpos)-np.array(endpos)))**2)/10 # setting RRT resolution
 
     INIT_XYZS = np.array([[0, 0,  0] for i in range(num_drones)])
@@ -81,7 +87,12 @@ def run(
     PYB_CLIENT = env.getPyBulletClient()
     
     ### Obstacle environment ###
-    obstacle_ids = create_boxes_2(env) # Storing id of obstacles
+    if case == 1:
+        obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    if case == 2:
+        obstacle_ids = create_boxes_2(env) # Storing id of obstacles
+    if case == 3:
+        obstacle_ids = create_boxes_3(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
 
@@ -173,8 +184,8 @@ def run(
     
     for i in range(0,len(TARGET_POS)-N, 3):
         if i%100 ==0:
-            print(i,"Steps taken")
-        if i%10 ==0:
+            print(i,"Steps takenout of ", len(TARGET_POS))
+        if i%20 ==0:
             print(x_init, TARGET_POS[i])
         
         x_end[:3] = TARGET_POS[i+N]
@@ -186,7 +197,7 @@ def run(
         new_vel.append(tuple(states[1,3:6]))
         new_rpydot.append(tuple(states[1,9:12]))
         x_init[:3] = states[-1,0:3]
-        print(len(states))
+        # print(len(states))
 
     new_path = np.array(new_path).reshape(-1,3)
     new_rpys = np.array(new_rpys)
@@ -194,6 +205,8 @@ def run(
     new_rpydot = np.array(new_rpydot)
     # for i in range(len(new_path)):
     #     print(new_path, TARGET_POS)
+
+
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=control_freq_hz,
                     num_drones=num_drones,
@@ -205,7 +218,18 @@ def run(
     plt.plot(new_path)
     plt.plot(TARGET_POS)
     plt.show()
-    
+
+    for i, tar in enumerate(new_path):
+    # loading the target mpc positions in the simulation as red dots
+        if i%10 == 0:
+            p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/mpcwaypoints.urdf'),
+                    tar,
+                    p.getQuaternionFromEuler([0,0,0]),
+                    useFixedBase=True,
+                    physicsClientId=env.CLIENT
+                    )
+            
+
     TARGET_POS = new_path
     #### Initialize the controllers ############################
     if drone in [DroneModel.CF2X, DroneModel.CF2P]:
@@ -285,4 +309,7 @@ if __name__ == "__main__":
     parser.add_argument('--colab',              default=DEFAULT_COLAB,              type=bool,          help='Whether example is being run by a notebook (default: "False")', metavar='')
     ARGS = parser.parse_args()
 
-    run(**vars(ARGS))
+    ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
+    case = 2
+    ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
+    run(case = case, **vars(ARGS))
