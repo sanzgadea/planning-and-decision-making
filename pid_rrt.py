@@ -103,7 +103,7 @@ def run(
     path is split up using linspace based on the num_wp
     to match the number of positions in the TARGET_PATH to NUM_WP
     """
-    PERIOD = 10
+    PERIOD = 20
     NUM_WP = control_freq_hz*PERIOD
     positions = []
     dimensions = []
