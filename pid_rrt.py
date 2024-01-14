@@ -56,7 +56,7 @@ def run(case = 2,
         iterations = 500
         endpos = (-5.,5.,2.) #env 1
     if case == 2:
-        iterations = 2000
+        iterations = 3000
         endpos = (5.,-5.,2.) #env 2
     if case == 3:
         iterations = 1500

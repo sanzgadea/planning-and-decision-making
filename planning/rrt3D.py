@@ -1,4 +1,7 @@
 '''
+Heavily modified RRT* from MIT, the licence can be found below:
+
+
 MIT License
 3D rrt edited for PDM inspired by Copyright (c) 2019 Fanjin Zeng
 This work is licensed under the terms of the MIT license, see <https://opensource.org/licenses/MIT>.  
