@@ -97,9 +97,9 @@ def mpc_control(vehicle, N, x_init, x_target):
         Q = np.diag([10, 10, 10, 1.0, 1.0, 1.0, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001])
         R = np.diag([1, 1., 1., 1.])
        
-        x_max, x_min, xdot_max, xdot_min = 50, -50, 1.5, -0.5 #specify max and min points for velocity coordinates and angles, coordinates are needed for the range of ppossible solutions
-        y_max, y_min, ydot_max, ydot_min = 50, -50, 1.5, -0.5
-        z_max, z_min, zdot_max, zdot_min = 50, -50, 1.5, -0.5
+        x_max, x_min, xdot_max, xdot_min = 50, -50, 30, -30 #specify max and min points for velocity coordinates and angles, coordinates are needed for the range of ppossible solutions
+        y_max, y_min, ydot_max, ydot_min = 50, -50, 30, -30
+        z_max, z_min, zdot_max, zdot_min = 50, -50, 1, -1
 
 
         phi_max, phi_min, phidot_max, phidot_min = 15*180/np.pi,-15*180/np.pi, 0.1*180/np.pi,-0.5*180/np.pi
@@ -267,42 +267,42 @@ def plot_trajectorie(filename, x, u, T):
     plt.tight_layout()
     plt.show()
 
-    f, axes = plt.subplots(2, 2, figsize=(12, 6))
+    # f, axes = plt.subplots(2, 2, figsize=(12, 6))
 
-    # Plot input
-    axes[0, 0].plot(u[0, :])
-    axes[0, 0].set_ylabel(r"$u1$ $(m)$", fontsize=14)
-    axes[0, 0].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
-    axes[0, 0].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
-    axes[0, 0].set_xlim([0, T])
-    axes[0, 0].grid()
+    # # Plot input
+    # axes[0, 0].plot(u[0, :])
+    # axes[0, 0].set_ylabel(r"$u1$ $(m)$", fontsize=14)
+    # axes[0, 0].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
+    # axes[0, 0].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
+    # axes[0, 0].set_xlim([0, T])
+    # axes[0, 0].grid()
 
-    # Plot input
-    axes[1, 0].plot(u[1, :])
-    axes[1, 0].set_ylabel(r"$u2$ $(m)$", fontsize=14)
-    axes[1, 0].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
-    axes[1, 0].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
-    axes[1, 0].set_xlim([0, T])
-    axes[1, 0].grid()
+    # # Plot input
+    # axes[1, 0].plot(u[1, :])
+    # axes[1, 0].set_ylabel(r"$u2$ $(m)$", fontsize=14)
+    # axes[1, 0].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
+    # axes[1, 0].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
+    # axes[1, 0].set_xlim([0, T])
+    # axes[1, 0].grid()
 
-    # Plot input
-    axes[0, 1].plot(u[2, :])
-    axes[0, 1].set_ylabel(r"$u3$ $(m)$", fontsize=14)
-    axes[0, 1].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
-    axes[0, 1].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
-    axes[0, 1].set_xlim([0, T])
-    axes[0, 1].grid()
+    # # Plot input
+    # axes[0, 1].plot(u[2, :])
+    # axes[0, 1].set_ylabel(r"$u3$ $(m)$", fontsize=14)
+    # axes[0, 1].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
+    # axes[0, 1].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
+    # axes[0, 1].set_xlim([0, T])
+    # axes[0, 1].grid()
 
-    # Plot input
-    axes[1, 1].plot(u[3, :])
-    axes[1, 1].set_ylabel(r"$u4$ $(m)$", fontsize=14)
-    axes[1, 1].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
-    axes[1, 1].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
-    axes[1, 1].set_xlim([0, T])
-    axes[1, 1].grid()
+    # # Plot input
+    # axes[1, 1].plot(u[3, :])
+    # axes[1, 1].set_ylabel(r"$u4$ $(m)$", fontsize=14)
+    # axes[1, 1].set_yticks([np.min(x[0, :]), 0, np.max(x[0, :])])
+    # axes[1, 1].set_ylim([np.min(x[0, :]) - 0.1, np.max(x[0, :]) + 0.1])
+    # axes[1, 1].set_xlim([0, T])
+    # axes[1, 1].grid()
 
-    plt.tight_layout()
-    plt.show()
+    # plt.tight_layout()
+    # plt.show()
     
 
 if __name__ == "__main__":

@@ -159,7 +159,7 @@ def run(
     NUM_WP = control_freq_hz*PERIOD
     dt = 1/control_freq_hz
     N = 10
-    T = 1
+    T = 10
     m=1
     I_x,I_y,I_z = 1, 1, 1
     
@@ -168,22 +168,27 @@ def run(
     x_end = np.zeros((12))
     new_path,new_rpys,new_vel, new_rpydot = [],[],[],[]
     # Simulate the result
-    x_init[:3] = TARGET_POS[i]
-    print(TARGET_POS[i])
-    for i in range(len(TARGET_POS)-N):
+    x_init[:3] = TARGET_POS[0]
+
+    
+    for i in range(0,len(TARGET_POS)-N, 3):
         if i%100 ==0:
             print(i,"Steps taken")
+        if i%10 ==0:
+            print(x_init, TARGET_POS[i])
         
         x_end[:3] = TARGET_POS[i+N]
         controller = lambda x_init : mpc_control(vehicle, N, x_init, x_end)
         states, inputs, plans, timesteps, theta_Al = simulate(vehicle, dt, T, x_init, x_end, N, controller, plot_trajectories=False)
         states = states.T
-        new_path.append(tuple(states[1,0:3]))
+        new_path.append(tuple(states[-3:,0:3]))
         new_rpys.append(tuple(states[1,6:9]))
         new_vel.append(tuple(states[1,3:6]))
         new_rpydot.append(tuple(states[1,9:12]))
-        x_init[:3] = states[1,0:3]
-    
+        x_init[:3] = states[-1,0:3]
+        print(len(states))
+
+    new_path = np.array(new_path).reshape(-1,3)
     new_rpys = np.array(new_rpys)
     new_vel = np.array(new_vel)
     new_rpydot = np.array(new_rpydot)
@@ -195,7 +200,13 @@ def run(
                     output_folder=output_folder,
                     colab=colab
                     )
-
+    
+    ###plot graphs rrt vs mpc
+    plt.plot(new_path)
+    plt.plot(TARGET_POS)
+    plt.show()
+    
+    TARGET_POS = new_path
     #### Initialize the controllers ############################
     if drone in [DroneModel.CF2X, DroneModel.CF2P]:
         ctrl = [DSLPIDControl(drone_model=drone) for i in range(num_drones)]
