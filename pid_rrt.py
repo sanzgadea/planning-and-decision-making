@@ -103,8 +103,6 @@ def run(
     path is split up using linspace based on the num_wp
     to match the number of positions in the TARGET_PATH to NUM_WP
     """
-    PERIOD = 20
-    NUM_WP = control_freq_hz*PERIOD
     positions = []
     dimensions = []
     for id in obstacle_info:
@@ -115,13 +113,15 @@ def run(
     if G.success:
         print("A path has been found")
         path = dijkstra(G)
-        print(path)
+        # print(path)
         # print(obstacles)
         plot_path(G, positions, dimensions, path)
     else:
         print("A path was not found")
         plot_path(G, positions, dimensions)
 
+    PERIOD = G.length # equal to 1m/s speed
+    NUM_WP = control_freq_hz*PERIOD
     path = np.array(dijkstra(G))
     num = int(NUM_WP/len(path))
     TARGET_POS = np.zeros((len(path)*num,3))

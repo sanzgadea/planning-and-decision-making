@@ -101,6 +101,7 @@ class Graph:
 
         # Cache for distances between vertices
         self.distance_cache = {}
+        self.length = 0
     
     def add_vex(self, pos):
         pos_tuple = tuple(pos)  # Convert numpy array to tuple
@@ -127,6 +128,12 @@ class Graph:
         posy = self.startpos[1] - (self.sy / 2.) + ry * self.sy * 2 * sampling_radius
         posz = self.startpos[2] - (self.sz / 2.) + rz * self.sz * 2 * sampling_radius
         return posx, posy, posz
+    
+    def path_length(self, path):
+        length = 0.0
+        for i in range(1, len(path)):
+            length += np.linalg.norm(np.array(path[i]) - np.array(path[i-1]))
+        return length
 
 def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
     # print(startpos, endpos, obstacles, dimensions)
@@ -181,7 +188,11 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
             G.add_edge(newidx, endidx, dist)
             G.distances[endidx] = min(G.distances.get(endidx, float('inf')), G.distances[newidx] + dist)
             G.success = True
-            print('success in finding path')
+            path = dijkstra(G)
+
+            # Calculate the length of the path
+            G.length = G.path_length(path)
+            print(f'success in finding path with length: {G.length}')
             # break
     return G
 
