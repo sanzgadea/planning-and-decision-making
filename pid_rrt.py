@@ -71,10 +71,10 @@ def run(
     R = .3
     startpos = (0., 0.,1.)
     endpos = (5.,-5.,2.)
-    H_STEP = np.sqrt((np.linalg.norm(np.array(startpos)-np.array(endpos)))**2)/10
+    H_STEP = np.sqrt((np.linalg.norm(np.array(startpos)-np.array(endpos)))**2)/10 #setting RRT resolution
     # print(H_STEP)
 
-    INIT_XYZS = np.array([startpos for i in range(num_drones)])
+    INIT_XYZS = np.array([[0, 0,  0] for i in range(num_drones)])
     INIT_RPYS = np.array([[0, 0,  0] for i in range(num_drones)])
     
     END_XYZS = np.array([[1,1,1] for i in range(num_drones)])
@@ -183,6 +183,18 @@ def run(
             except: 
                 continue
     wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
+    print("waypoints: ", wp_counters)
+    print("TARGET_POS: ", TARGET_POS)
+
+    for i, tar in enumerate(TARGET_POS):
+        # loading the target positions in the simulation as red dots
+        if i%20 == 0:
+            p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/target.urdf'),
+                    tar,
+                    p.getQuaternionFromEuler([0,0,0]),
+                    useFixedBase=True,
+                    physicsClientId=env.CLIENT
+                    )
 
 
     #### Initialize the logger #################################
