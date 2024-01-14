@@ -126,6 +126,7 @@ def run(
     obstacle_ids = create_boxes_2(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
+
     for i in range(len(obstacle_ids)):
         # Take into account that the relation beween the position and size of the box is the following: position is the coordinate of the 
         # center of the box (so half width, half height and half depth)
@@ -134,8 +135,11 @@ def run(
         obstacle_info[obstacle_ids[i]] = [obstacle_ids[i], pos, shape, orn] #INFO: Obstacle ID (float), position tuple(x, y, x, size tuple (x, y, x) and orientation tuple(quaternions)
         print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
     # print(obstacle_info)
-    
-
+    positions = []
+    dimensions=[] 
+    for id in obstacle_info:
+        positions.append(list(obstacle_info[id][1]))
+        dimensions.append(list(obstacle_info[id][2]))
     #### Initialize a trajectory ######################
     """Using the 3D rrt to get the path, 
     path is split up using linspace based on the num_wp

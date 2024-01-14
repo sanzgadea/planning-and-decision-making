@@ -14,7 +14,11 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 import heapq
 from collections import deque
+<<<<<<< HEAD
 from itertools import islice
+=======
+
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
 
 class Line():
     def __init__(self, p0, p1):
@@ -123,6 +127,7 @@ class Graph:
         return posx, posy, posz
     
 def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
+<<<<<<< HEAD
     # print(startpos, endpos, obstacles, dimensions)
     G = Graph(startpos, endpos)
 
@@ -139,6 +144,17 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
             if isInObstacleBox(randvex, obstacles, dimensions):
                 continue
 
+=======
+    print(startpos, endpos, obstacles, dimensions)
+    G = Graph(startpos, endpos)
+
+    for _ in range(n_iter):
+        randvex = G.randomPosition()
+
+        if isInObstacleBox(randvex, obstacles, dimensions):
+            continue
+
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
         nearvex, nearidx = nearest(G, randvex, obstacles, dimensions)
         if nearvex is None:
             continue
@@ -169,6 +185,7 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
                 G.distances[idx] = G.distances[newidx] + dist
 
         dist = distance(newvex, G.endpos)
+<<<<<<< HEAD
         if dist < 2 * stepSize:  # Adjust the threshold as needed
             endidx = G.add_vex(G.endpos)
             G.add_edge(newidx, endidx, dist)
@@ -176,6 +193,16 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
             G.success = True
             print('success in finding path')
             # break
+=======
+        if isInObstacleBox(newvex, G.endpos, dimensions):
+            endidx = G.add_vex(G.endpos)
+            G.add_edge(newidx, endidx, dist)
+            G.distances[endidx] = min(G.distances.get(endidx, float('inf')), G.distances[newidx]+dist)
+
+            G.success = True
+            print('success')
+            break
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
     return G
 
 def nearest(G, vex, obstacles, dimensions):
@@ -219,13 +246,21 @@ def plot_sphere(ax, center, radius):
     ax.plot_surface(x, y, z, color='b', alpha=0.5)
 
 
+<<<<<<< HEAD
 def plot_path(G, obstacles, dimensions, path=None):
+=======
+def plot(G, obstacles, dimensions, path=None):
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
     px = [x for x, y, z in G.vertices]
     py = [y for x, y, z in G.vertices]
     pz = [z for x, y, z in G.vertices]
     ax = plt.figure().add_subplot(projection='3d')
 
+<<<<<<< HEAD
     for obs, dims in zip(islice(obstacles, 1, None), islice(dimensions, 1, None)):
+=======
+    for obs, dims in zip(obstacles, dimensions):
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
         plot_box(ax, obs, dims)
 
     ax.scatter(px, py, pz, c='cyan', s=5)
@@ -234,7 +269,11 @@ def plot_path(G, obstacles, dimensions, path=None):
 
     lines = [(G.vertices[edge[0]], G.vertices[edge[1]]) for edge in G.edges]
     
+<<<<<<< HEAD
     lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5, alpha=.1)
+=======
+    lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5)
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
     ax.add_collection(lc)
 
     if path is not None:
@@ -296,7 +335,11 @@ def dijkstra(G):
     
 if __name__ == '__main__':
     startpos = (0., 0., 0.)
+<<<<<<< HEAD
     endpos = (9., 9., 9.)
+=======
+    endpos = (3., 3., 3.)
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
     obstacles = [(1.5, 1.5, 1.5), (6., 6., 6.)]
     n_iter = 620
     radius = 1
@@ -314,7 +357,14 @@ if __name__ == '__main__':
         print("A path has been found")
         path = dijkstra(G)
         print(path)
+<<<<<<< HEAD
         plot_path(G, obstacles, dimensions, path)
     else:
         print("A path was not found")
         plot_path(G, obstacles, dimensions)
+=======
+        plot(G, obstacles, dimensions, path)
+    else:
+        print("A path was not found")
+        plot(G, obstacles, dimensions)
+>>>>>>> 03c9cb4209c1fef2542aa0c0a178da855c541877
