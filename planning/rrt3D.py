@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 import heapq
 from collections import deque
-
+from itertools import islice
 
 class Line():
     def __init__(self, p0, p1):
@@ -112,25 +112,32 @@ class Graph:
         self.neighbors[idx2].append((idx1, cost))
 
 
-    def randomPosition(self):
+    def randomPosition(self, sampling_radius=1.5):
         rx = random()
         ry = random()
         rz = random()
 
-        posx = self.startpos[0] - (self.sx / 2.) + rx * self.sx * 2
-        posy = self.startpos[1] - (self.sy / 2.) + ry * self.sy * 2
-        posz = self.startpos[2] - (self.sy / 2.) + rz * self.sy * 2
+        posx = self.startpos[0] - (self.sx / 2.) + rx * self.sx * 2 * sampling_radius
+        posy = self.startpos[1] - (self.sy / 2.) + ry * self.sy * 2 * sampling_radius
+        posz = self.startpos[2] - (self.sz / 2.) + rz * self.sz * 2 * sampling_radius
         return posx, posy, posz
     
 def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
-    print(startpos, endpos, obstacles, dimensions)
+    # print(startpos, endpos, obstacles, dimensions)
     G = Graph(startpos, endpos)
 
-    for _ in range(n_iter):
-        randvex = G.randomPosition()
+    for iter in range(n_iter):
+        if iter%250 == 0:
+            print(f"currently in RRT iteration {iter}")
+            randvex = G.endpos + np.array([0.01, 0.01, 0.01])
+            # print(randvex)
+            if isInObstacleBox(randvex, obstacles, dimensions):
+                raise ValueError("END POSITION IS IN OBSTACLE!")
+        else:
+            randvex = G.randomPosition()
 
-        if isInObstacleBox(randvex, obstacles, dimensions):
-            continue
+            if isInObstacleBox(randvex, obstacles, dimensions):
+                continue
 
         nearvex, nearidx = nearest(G, randvex, obstacles, dimensions)
         if nearvex is None:
@@ -162,14 +169,13 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
                 G.distances[idx] = G.distances[newidx] + dist
 
         dist = distance(newvex, G.endpos)
-        if isInObstacleBox(newvex, G.endpos, dimensions):
+        if dist < 2 * stepSize:  # Adjust the threshold as needed
             endidx = G.add_vex(G.endpos)
             G.add_edge(newidx, endidx, dist)
-            G.distances[endidx] = min(G.distances.get(endidx, float('inf')), G.distances[newidx]+dist)
-
+            G.distances[endidx] = min(G.distances.get(endidx, float('inf')), G.distances[newidx] + dist)
             G.success = True
-            print('success')
-            break
+            print('success in finding path')
+            # break
     return G
 
 def nearest(G, vex, obstacles, dimensions):
@@ -213,13 +219,13 @@ def plot_sphere(ax, center, radius):
     ax.plot_surface(x, y, z, color='b', alpha=0.5)
 
 
-def plot(G, obstacles, dimensions, path=None):
+def plot_path(G, obstacles, dimensions, path=None):
     px = [x for x, y, z in G.vertices]
     py = [y for x, y, z in G.vertices]
     pz = [z for x, y, z in G.vertices]
     ax = plt.figure().add_subplot(projection='3d')
 
-    for obs, dims in zip(obstacles, dimensions):
+    for obs, dims in zip(islice(obstacles, 1, None), islice(dimensions, 1, None)):
         plot_box(ax, obs, dims)
 
     ax.scatter(px, py, pz, c='cyan', s=5)
@@ -228,7 +234,7 @@ def plot(G, obstacles, dimensions, path=None):
 
     lines = [(G.vertices[edge[0]], G.vertices[edge[1]]) for edge in G.edges]
     
-    lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5)
+    lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5, alpha=.1)
     ax.add_collection(lc)
 
     if path is not None:
@@ -290,7 +296,7 @@ def dijkstra(G):
     
 if __name__ == '__main__':
     startpos = (0., 0., 0.)
-    endpos = (3., 3., 3.)
+    endpos = (9., 9., 9.)
     obstacles = [(1.5, 1.5, 1.5), (6., 6., 6.)]
     n_iter = 620
     radius = 1
@@ -308,7 +314,7 @@ if __name__ == '__main__':
         print("A path has been found")
         path = dijkstra(G)
         print(path)
-        plot(G, obstacles, dimensions, path)
+        plot_path(G, obstacles, dimensions, path)
     else:
         print("A path was not found")
-        plot(G, obstacles, dimensions)
+        plot_path(G, obstacles, dimensions)

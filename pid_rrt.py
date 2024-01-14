@@ -35,7 +35,7 @@ from gym_pybullet_drones.utils.utils import sync, str2bool
 from planning.rrt3D import *
 from Environments.Obstacle_creation import *
 
-DEFAULT_DRONES = DroneModel("cf2x")
+DEFAULT_DRONES = DroneModel("cf2p")
 DEFAULT_NUM_DRONES = 1
 DEFAULT_PHYSICS = Physics("pyb")
 DEFAULT_GUI = True
@@ -45,7 +45,7 @@ DEFAULT_USER_DEBUG_GUI = False
 DEFAULT_OBSTACLES = False
 DEFAULT_SIMULATION_FREQ_HZ = 240
 DEFAULT_CONTROL_FREQ_HZ = 48
-DEFAULT_DURATION_SEC = 12
+DEFAULT_DURATION_SEC = 30
 DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
@@ -66,13 +66,16 @@ def run(
         ):
     #### Initialize the simulation #############################
     H = .1
-    H_STEP = 0.5
+    H_STEP = .5
+    iterations = 3000
     R = .3
-    startpos = (0., 0., 1.) 
-    endpos = (10., 10. , 3.)
+    startpos = (0., 0.,1.)
+    endpos = (5.,-5.,2.)
+    H_STEP = np.sqrt((np.linalg.norm(np.array(startpos)-np.array(endpos)))**2)/10
+    # print(H_STEP)
 
-    INIT_XYZS = np.array([[0,0,0] for i in range(num_drones)])
-    INIT_RPYS = np.array([[0, 0,  i * (np.pi/2)/num_drones] for i in range(num_drones)])
+    INIT_XYZS = np.array([startpos for i in range(num_drones)])
+    INIT_RPYS = np.array([[0, 0,  0] for i in range(num_drones)])
     
     END_XYZS = np.array([[1,1,1] for i in range(num_drones)])
 
@@ -112,7 +115,6 @@ def run(
                         obstacles=obstacles,
                         user_debug_gui=user_debug_gui
                         )
-
     #### Obtain the PyBullet Client ID from the environment ####
     PYB_CLIENT = env.getPyBulletClient()
     
@@ -121,7 +123,7 @@ def run(
 
 
     ### Obstacle environment ###
-    obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    obstacle_ids = create_boxes_2(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
 
@@ -145,21 +147,24 @@ def run(
     """
     PERIOD = 10
     NUM_WP = control_freq_hz*PERIOD
-    
-    print()
-    print("Dimensions:")
-    print(dimensions)
-    print()
-    print("Positions")
-    print(positions)
+    positions = []
+    dimensions = []
+    for id in obstacle_info:
+        positions.append(obstacle_info[id][1])
+        dimensions.append(obstacle_info[id][2])
+    G = RRT_star(startpos,endpos,positions, iterations, dimensions, H_STEP) # startpos,endpos, obstacles, n_iter, radius, stepSize
 
+    if G.success:
+        print("A path has been found")
+        path = dijkstra(G)
+        print(path)
+        # print(obstacles)
+        plot_path(G, positions, dimensions, path)
+    else:
+        print("A path was not found")
+        plot_path(G, positions, dimensions)
 
-    raph = RRT_star(startpos,endpos,positions, 1000, dimensions, H_STEP) # startpos,endpos, obstacles, n_iter, dimensions, stepSize
-    
-    path = np.array(dijkstra(raph))
-    print("#################")
-    print(path)
-    print("#################")
+    path = np.array(dijkstra(G))
     num = int(NUM_WP/len(path))
     TARGET_POS = np.zeros((len(path)*num,3))
     
@@ -217,12 +222,20 @@ def run(
 
         #### Log the simulation ####################################
         for j in range(num_drones):
-            logger.log(drone=j,
-                       timestamp=i/env.CTRL_FREQ,
-                       state=obs[j],
-                       control=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2], INIT_RPYS[j, :], np.zeros(6)])
-                       # control=np.hstack([INIT_XYZS[j, :]+TARGET_POS[wp_counters[j], :], INIT_RPYS[j, :], np.zeros(6)])
-                       )
+            # print(j)
+            try:
+                logger.log(drone=j,
+                        timestamp=i/env.CTRL_FREQ,
+                        state=obs[j],
+                        control=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2], INIT_RPYS[j, :], np.zeros(6)])
+                        # control=np.hstack([INIT_XYZS[j, :]+TARGET_POS[wp_counters[j], :], INIT_RPYS[j, :], np.zeros(6)])
+                        )
+            except:
+                # print("error in logger: TARGET_POS", TARGET_POS, wp_counters[j])
+                # print("error in logger target: ", TARGET_POS[wp_counters[j], 0:2])
+                # print("error in logger: INIT_XYZS",INIT_XYZS[j, 2])
+                # print("error in logger: INIT_RPYS", INIT_RPYS[j, :])
+                print("error in logger: ",)
 
         #### Printout ##############################################
         env.render()
