@@ -17,6 +17,7 @@ from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.utils.utils import sync, str2bool
 from planning.rrt3D import *
 from Environments.Obstacle_creation import *
+from planning.mpc import *
 
 DEFAULT_DRONES = DroneModel("cf2p")
 DEFAULT_NUM_DRONES = 1
@@ -80,7 +81,7 @@ def run(
     PYB_CLIENT = env.getPyBulletClient()
     
     ### Obstacle environment ###
-    obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    obstacle_ids = create_boxes_2(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
 
@@ -153,7 +154,41 @@ def run(
                     useFixedBase=True,
                     physicsClientId=env.CLIENT
                     )
-
+            
+    PERIOD = 45
+    NUM_WP = control_freq_hz*PERIOD
+    dt = 1/control_freq_hz
+    N = 10
+    T = 1
+    m=1
+    I_x,I_y,I_z = 1, 1, 1
+    
+    vehicle = drone_properties(dt, m, I_x, I_y, I_z)
+    x_init = np.zeros((12))
+    x_end = np.zeros((12))
+    new_path,new_rpys,new_vel, new_rpydot = [],[],[],[]
+    # Simulate the result
+    x_init[:3] = TARGET_POS[i]
+    print(TARGET_POS[i])
+    for i in range(len(TARGET_POS)-N):
+        if i%100 ==0:
+            print(i,"Steps taken")
+        
+        x_end[:3] = TARGET_POS[i+N]
+        controller = lambda x_init : mpc_control(vehicle, N, x_init, x_end)
+        states, inputs, plans, timesteps, theta_Al = simulate(vehicle, dt, T, x_init, x_end, N, controller, plot_trajectories=False)
+        states = states.T
+        new_path.append(tuple(states[1,0:3]))
+        new_rpys.append(tuple(states[1,6:9]))
+        new_vel.append(tuple(states[1,3:6]))
+        new_rpydot.append(tuple(states[1,9:12]))
+        x_init[:3] = states[1,0:3]
+    
+    new_rpys = np.array(new_rpys)
+    new_vel = np.array(new_vel)
+    new_rpydot = np.array(new_rpydot)
+    # for i in range(len(new_path)):
+    #     print(new_path, TARGET_POS)
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=control_freq_hz,
                     num_drones=num_drones,

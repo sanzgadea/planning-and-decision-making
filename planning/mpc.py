@@ -156,7 +156,7 @@ def simulate(vehicle, dt, T, x_init, x_target, plan_length, control_func, plot_t
     # Function that plots the trajectories.
     # The plot is stored with the name of the first parameter
     # print(x_real.shape)
-    print(x_real.shape)
+    # print(x_real.shape)
     return x_real, u_real, x_all, timesteps, theta_all
 
 
