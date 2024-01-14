@@ -122,9 +122,10 @@ def run(
 
     PERIOD = G.length # equal to 1m/s speed
     NUM_WP = control_freq_hz*PERIOD
+    NUM_iter = control_freq_hz*DEFAULT_DURATION_SEC
     path = np.array(dijkstra(G))
     num = int(NUM_WP/len(path))
-    TARGET_POS = np.zeros((len(path)*num,3))
+    TARGET_POS = np.zeros((NUM_iter,3))
     
     count = 0
     for i in range(len(path)):
@@ -135,15 +136,13 @@ def run(
                 count+=1
         except:
             try:
-                for k in range(NUM_WP-count):
-                    TARGET_POS[count, :] = endpos
+                for k in range(NUM_iter-count):
+                    TARGET_POS[count, :] = endpos #  + np.random.uniform(0, 0.1, size=(3,))
                     count+=1
-            except: 
+            except:
                 continue
-    wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
 
-    print("waypoints: ", wp_counters)
-    print("TARGET_POS: ", TARGET_POS)
+    wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
 
     for i, tar in enumerate(TARGET_POS):
         # loading the target positions in the simulation as red dots
@@ -183,9 +182,11 @@ def run(
                                                                     target_rpy=INIT_RPYS[j, :]
                                                                     )
 
-        #### Go to the next way point and loop #####################
+        #### Go to the next way point and loop and hold on the last one  #####################
         for j in range(num_drones):
-            wp_counters[j] = wp_counters[j] + 1 if wp_counters[j] < (NUM_WP-1) else 0
+            if wp_counters[j] < (NUM_WP-1):
+                wp_counters[j] += 1
+
 
         #### Log the simulation ####################################
         for j in range(num_drones):
