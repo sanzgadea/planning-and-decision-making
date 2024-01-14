@@ -3,7 +3,6 @@ MIT License
 3D rrt edited for PDM inspired by Copyright (c) 2019 Fanjin Zeng
 This work is licensed under the terms of the MIT license, see <https://opensource.org/licenses/MIT>.  
 '''
-
 import numpy as np
 from random import random
 import matplotlib.pyplot as plt
@@ -26,23 +25,29 @@ class Line():
     def path(self, t):
         return self.p + t * self.dirn
 
-def distance(x, y):
-    return np.linalg.norm(np.array(x) - np.array(y))
+def distance(points1, points2):
+    return np.linalg.norm(np.array(points1) - np.array(points2))
 
 def isInObstacle(vex, obstacles, radius):
     obstacles = np.array(obstacles)
     distances = np.linalg.norm(obstacles - vex, axis=1)
     return np.any(distances < radius)
 
-def isInObstacleBox(point, centers, dimensions):
-    point = np.array(point)
-    for center, dim in zip(centers, dimensions):
-        half_dim = np.array(dim) / 2.0 + 0.20  # Including margin
-        min_bound = center - half_dim
-        max_bound = center + half_dim
-        if np.all((point >= min_bound) & (point <= max_bound)):
-            return True
-    return False
+def isInObstacleBox(points, centers, dimensions):
+    points = np.array(points) if not isinstance(points, np.ndarray) else points
+    centers = np.array(centers)
+    dimensions = np.array(dimensions)
+    half_dims = dimensions / 2.0 + 0.20  # Including margin
+
+    min_bounds = centers - half_dims
+    max_bounds = centers + half_dims
+
+    # Ensure points have the correct shape for broadcasting
+    if points.ndim == 1:
+        points = points.reshape(1, -1)
+
+    in_obstacle = np.all((points[:, None] >= min_bounds) & (points[:, None] <= max_bounds), axis=2)
+    return np.any(in_obstacle, axis=1)
 
 def Intersection(line, center, radius):
     a = np.dot(line.dirn, line.dirn)
@@ -58,7 +63,6 @@ def Intersection(line, center, radius):
     t2 = (-b - sqrt_discriminant) / (2 * a)
 
     return (0 <= t1 <= line.dist) or (0 <= t2 <= line.dist)
-
 
 def isThruObstacle(line, centers, dimensions):
     for center, dim in zip(centers, dimensions):
@@ -78,31 +82,34 @@ def IntersectionBox(line, center, dimension):
     t_exit = np.min(tmax)
     return (t_enter <= t_exit) and (t_exit > 0)
 
-   
 class Graph:
     def __init__(self, startpos, endpos):
-        self.startpos = startpos
-        self.endpos = endpos
+        self.startpos = np.array(startpos)
+        self.endpos = np.array(endpos)
 
-        self.vertices = [startpos]
+        self.vertices = [self.startpos]
         self.edges = []
         self.success = False
 
-        self.vex2idx = {startpos:0}
-        self.neighbors = {0:[]}
-        self.distances = {0:0.}
+        self.vex2idx = {tuple(startpos): 0}
+        self.neighbors = {0: []}
+        self.distances = {0: 0.}
 
         self.sx = endpos[0] - startpos[0]
         self.sy = endpos[1] - startpos[1]
         self.sz = endpos[2] - startpos[2]
 
+        # Cache for distances between vertices
+        self.distance_cache = {}
+    
     def add_vex(self, pos):
+        pos_tuple = tuple(pos)  # Convert numpy array to tuple
         try:
-            idx = self.vex2idx[pos]
-        except:
+            idx = self.vex2idx[pos_tuple]
+        except KeyError:
             idx = len(self.vertices)
             self.vertices.append(pos)
-            self.vex2idx[pos] = idx
+            self.vex2idx[pos_tuple] = idx
             self.neighbors[idx] = []
         return idx
 
@@ -110,7 +117,6 @@ class Graph:
         self.edges.append((idx1, idx2))
         self.neighbors[idx1].append((idx2, cost))
         self.neighbors[idx2].append((idx1, cost))
-
 
     def randomPosition(self, sampling_radius=1.5):
         rx = random()
@@ -121,7 +127,7 @@ class Graph:
         posy = self.startpos[1] - (self.sy / 2.) + ry * self.sy * 2 * sampling_radius
         posz = self.startpos[2] - (self.sz / 2.) + rz * self.sz * 2 * sampling_radius
         return posx, posy, posz
-    
+
 def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
     # print(startpos, endpos, obstacles, dimensions)
     G = Graph(startpos, endpos)
@@ -136,8 +142,8 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
         else:
             randvex = G.randomPosition()
 
-            if isInObstacleBox(randvex, obstacles, dimensions):
-                continue
+        if isInObstacleBox(np.array([randvex]), obstacles, dimensions)[0]:
+            continue
 
         nearvex, nearidx = nearest(G, randvex, obstacles, dimensions)
         if nearvex is None:
@@ -152,7 +158,8 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
 
         # update nearby vertices distance (if shorter)
         for vex in G.vertices:
-            if vex == newvex:
+
+            if np.array_equal(vex, newvex):
                 continue
 
             dist = distance(vex, newvex)
@@ -163,7 +170,7 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
             if isThruObstacle(line, obstacles, dimensions):
                 continue
 
-            idx = G.vex2idx[vex]
+            idx = G.vex2idx[tuple(vex)]
             if G.distances[newidx] + dist < G.distances[idx]:
                 G.add_edge(idx, newidx, dist)
                 G.distances[idx] = G.distances[newidx] + dist
@@ -179,24 +186,29 @@ def RRT_star(startpos, endpos, obstacles, n_iter, dimensions, stepSize):
     return G
 
 def nearest(G, vex, obstacles, dimensions):
-    Nvex = None
-    Nidx = None
-    minDist = float("inf")
+    # Use vectorization for distance calculations
+    vex_array = np.array([vex])
+    vertices_array = np.array(G.vertices)
+    
+    # Ensure vertices_array is two-dimensional
+    if vertices_array.ndim == 1:
+        vertices_array = vertices_array.reshape(1, -1)
 
+    distances = np.linalg.norm(vertices_array - vex_array, axis=1)
+
+    # Filtering out vertices going through obstacles
     for idx, v in enumerate(G.vertices):
         line = Line(v, vex)
         if isThruObstacle(line, obstacles, dimensions):
-            continue
+            distances[idx] = float("inf")
 
-        dist = distance(v, vex)
-        if dist < minDist:
-            minDist = dist
-            Nidx = idx
-            Nvex = v
+    Nidx = np.argmin(distances)
+    minDist = distances[Nidx]
 
-    return Nvex, Nidx
-
-
+    if minDist == float("inf"):
+        return None, None
+    else:
+        return G.vertices[Nidx], Nidx
 
 def newVertex(randvex, nearvex, stepSize):
     dirn = np.array(randvex) - np.array(nearvex)
@@ -205,8 +217,6 @@ def newVertex(randvex, nearvex, stepSize):
 
     newvex = (nearvex[0]+dirn[0], nearvex[1]+dirn[1], nearvex[2]+dirn[2])
     return newvex
-
-
 
 def plot_sphere(ax, center, radius):
     u = np.linspace(0, 2 * np.pi, 100)
@@ -217,7 +227,6 @@ def plot_sphere(ax, center, radius):
     z = center[2] + radius * np.outer(np.ones(np.size(u)), np.cos(v))
 
     ax.plot_surface(x, y, z, color='b', alpha=0.5)
-
 
 def plot_path(G, obstacles, dimensions, path=None):
     px = [x for x, y, z in G.vertices]
@@ -256,13 +265,16 @@ def plot_box(ax, center, dimensions):
     x, y, z = zip(min_bound, max_bound)
     ax.bar3d(x[0], y[0], z[0], x[1]-x[0], y[1]-y[0], z[1]-z[0], color='gray', alpha=0.5)
 
-
 def dijkstra(G):
-    if G.startpos not in G.vex2idx or G.endpos not in G.vex2idx:
+
+    startpos_tuple = tuple(G.startpos)
+    endpos_tuple = tuple(G.endpos)
+
+    if startpos_tuple not in G.vex2idx or endpos_tuple not in G.vex2idx:
         return None  # Start or end position not in the graph
 
-    srcIdx = G.vex2idx[G.startpos]
-    dstIdx = G.vex2idx[G.endpos]
+    srcIdx = G.vex2idx[startpos_tuple]
+    dstIdx = G.vex2idx[endpos_tuple]
 
     nodes = list(G.neighbors.keys())
     dist = {node: float('inf') for node in nodes}
@@ -286,6 +298,7 @@ def dijkstra(G):
     # retrieve path
     path = deque()
     curNode = dstIdx
+
     while prev[curNode] is not None:
         path.appendleft(G.vertices[curNode])
         curNode = prev[curNode]
@@ -293,7 +306,28 @@ def dijkstra(G):
 
     return list(path)
 
-    
+def smooth_path(path, obstacles, dimensions, stepSize, maxIterations=150):
+    iteration = 0
+    while iteration < maxIterations:
+        path_length = len(path)
+        if path_length < 3:
+            break  # Can't smooth a path with less than 3 points
+
+        # Randomly select two non-adjacent points in the path
+        idx1 = np.random.randint(0, path_length - 2)
+        idx2 = np.random.randint(idx1 + 1, path_length)
+        point1 = path[idx1]
+        point2 = path[idx2]
+        line = Line(point1, point2)
+        
+        # Check if the line intersects any obstacles
+        if not isThruObstacle(line, obstacles, dimensions):
+            # Create a new path skipping the points between idx1 and idx2
+            new_path = path[:idx1+1] + path[idx2:]
+            path = new_path  # Update the path
+        iteration += 1
+    return path
+  
 if __name__ == '__main__':
     startpos = (0., 0., 0.)
     endpos = (9., 9., 9.)
@@ -306,15 +340,18 @@ if __name__ == '__main__':
 
     G = RRT_star(startpos,endpos, obstacles, n_iter, dimensions, stepSize)
 
-
-    # G = RRT_star(startpos, endpos, obstacles, n_iter, radius, stepSize)
-    # # G = RRT(startpos, endpos, obstacles, n_iter, radius, stepSize)
-
     if G.success:
         print("A path has been found")
         path = dijkstra(G)
-        print(path)
+        print("Original path:", path)
+        
+        # Smooth the path
+        smooth_path = smooth_path(path, obstacles, dimensions, stepSize)
+        print("Smoothed path:", smooth_path)
+        # Plot paths
         plot_path(G, obstacles, dimensions, path)
+        plot_path(G, obstacles, dimensions, smooth_path)
+
     else:
         print("A path was not found")
         plot_path(G, obstacles, dimensions)
