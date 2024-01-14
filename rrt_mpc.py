@@ -68,7 +68,7 @@ def run(
     #### Initialize the simulation #############################
     H = .1
     H_STEP = .5
-    iterations = 1000
+    iterations = 3000
     R = .3
     startpos = (0., 0.,1.)
     endpos = (5.,-5.,2.)
@@ -124,7 +124,7 @@ def run(
 
 
     ### Obstacle environment ###
-    obstacle_ids = create_boxes_1(env) # Storing id of obstacles
+    obstacle_ids = create_boxes_2(env) # Storing id of obstacles
     print("obstacle_ids: ", obstacle_ids)
     obstacle_info = {}
 
@@ -146,7 +146,7 @@ def run(
     path is split up using linspace based on the num_wp
     to match the number of positions in the TARGET_PATH to NUM_WP
     """
-    PERIOD = 10
+    PERIOD = 30
     NUM_WP = control_freq_hz*PERIOD
     positions = []
     dimensions = []
@@ -171,11 +171,38 @@ def run(
     TARGET_POS = np.zeros((len(path)*num,3))
     
 
-    PERIOD = 10
+    
+
+    
+    num = int(NUM_WP/len(path))
+    TARGET_POS = np.zeros((len(path)*num,3))
+    
+    count = 0
+    for i in range(len(path)):
+        try:
+            target_XYZ = np.linspace(path[i],path[i+1], num)
+            # target_RPY = np.linspace(new_rpys[i],new_rpys[i+1], num)
+            for j in range(len(target_XYZ)):
+                TARGET_POS[count, :] = target_XYZ[j]
+                # TARGET_RPYS[count,:] = target_RPY[j]
+                
+                
+                count+=1
+        except:
+            try:
+                for k in range(NUM_WP-count):
+                    TARGET_POS[count, :] = endpos
+                    # TARGET_RPYS[count,:] = (0,0,0)
+                    count+=1
+            except: 
+                continue
+    wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
+    
+    PERIOD = 45
     NUM_WP = control_freq_hz*PERIOD
     dt = 1/control_freq_hz
-    N = 5
-    T = 10
+    N = 10
+    T = 1
     m=1
     I_x,I_y,I_z = 1, 1, 1
     
@@ -184,50 +211,27 @@ def run(
     x_end = np.zeros((12))
     new_path,new_rpys,new_vel, new_rpydot = [],[],[],[]
     # Simulate the result
-   
-    for i in range(len(path)-2):
-        x_init[:3] = path[i]
-        x_end[:3] = path[i+2]
+    x_init[:3] = TARGET_POS[i]
+    print(TARGET_POS[i])
+    for i in range(len(TARGET_POS)-N):
+        if i%100 ==0:
+            print(i,"Steps taken")
+        
+        x_end[:3] = TARGET_POS[i+N]
         controller = lambda x_init : mpc_control(vehicle, N, x_init, x_end)
         states, inputs, plans, timesteps, theta_Al = simulate(vehicle, dt, T, x_init, x_end, N, controller, plot_trajectories=False)
         states = states.T
-        print(states)
         new_path.append(tuple(states[1,0:3]))
         new_rpys.append(tuple(states[1,6:9]))
         new_vel.append(tuple(states[1,3:6]))
         new_rpydot.append(tuple(states[1,9:12]))
-
+        x_init[:3] = states[1,0:3]
     
-    num = int(NUM_WP/len(new_path))
-    TARGET_POS = np.zeros((len(new_path)*num,3))
-    TARGET_RPYS = np.zeros((len(new_rpys)*num,3))
-    TARGET_VEL = np.zeros((len(new_vel)*num,3))
-    TARGET_rpydot = np.zeros((len(new_rpys)*num,3))
-    
-    print(new_path, new_rpys)
-    path = new_path
-    count = 0
-    for i in range(len(path)):
-        try:
-            target_XYZ = np.linspace(path[i],path[i+1], num)
-            target_RPY = np.linspace(new_rpys[i],new_rpys[i+1], num)
-            for j in range(len(target_XYZ)):
-                TARGET_POS[count, :] = target_XYZ[j]
-                TARGET_RPYS[count,:] = target_RPY[j]
-                
-                
-                count+=1
-        except:
-            try:
-                for k in range(NUM_WP-count):
-                    TARGET_POS[count, :] = endpos
-                    TARGET_RPYS[count,:] = (0,0,0)
-                    count+=1
-            except: 
-                continue
-    wp_counters = np.array([int((k*NUM_WP/6)%NUM_WP) for k in range(num_drones)])
-    for i in TARGET_RPYS:
-        print(i)
+    new_rpys = np.array(new_rpys)
+    new_vel = np.array(new_vel)
+    new_rpydot = np.array(new_rpydot)
+    # for i in range(len(new_path)):
+    #     print(new_path, TARGET_POS)
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=control_freq_hz,
                     num_drones=num_drones,
@@ -255,8 +259,7 @@ def run(
             action[j, :], _, _ = ctrl[j].computeControlFromState(control_timestep=env.CTRL_TIMESTEP,
                                                                     state=obs[j],
                                                                     #target_pos=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2]]),
-                                                                    target_pos=INIT_XYZS[j, :] + TARGET_POS[wp_counters[j], :],
-                                                                    target_rpy=TARGET_RPYS[i])
+                                                                    target_pos=INIT_XYZS[j, :] + TARGET_POS[wp_counters[j], :])
             print("action",action)
 
         #### Go to the next way point and loop #####################
