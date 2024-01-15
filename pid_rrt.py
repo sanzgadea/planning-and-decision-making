@@ -1,4 +1,4 @@
-"Based on examle pid of the gym_pybullet_drones"
+"Based on example pid of the gym_pybullet_drones repository"
 
 import os
 import time
@@ -34,7 +34,7 @@ DEFAULT_DURATION_SEC = 30
 DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
-def run(case = 2,
+def run(case,
         drone=DEFAULT_DRONES,
         num_drones=DEFAULT_NUM_DRONES,
         physics=DEFAULT_PHYSICS,
@@ -105,7 +105,7 @@ def run(case = 2,
         pos, orn = p.getBasePositionAndOrientation(obstacle_ids[i])
         obstacle_info[obstacle_ids[i]] = [obstacle_ids[i], pos, shape, orn] #INFO: Obstacle ID (float), position tuple(x, y, x, size tuple (x, y, x) and orientation tuple(quaternions)
         print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
-    # print(obstacle_info)
+
     # Start and end visual indicators
     p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/waypoint.urdf'),
                 startpos,
@@ -141,8 +141,6 @@ def run(case = 2,
     if G.success:
         print("A path has been found")
         path = dijkstra(G)
-        # print(path)
-        # print(obstacles)
         plot_path(G, positions, dimensions, path)
     else:
         print("A path was not found")
@@ -165,7 +163,7 @@ def run(case = 2,
         except:
             try:
                 for k in range(NUM_iter-count):
-                    TARGET_POS[count, :] = endpos #  + np.random.uniform(0, 0.1, size=(3,))
+                    TARGET_POS[count, :] = endpos
                     count+=1
             except:
                 continue
@@ -205,7 +203,6 @@ def run(case = 2,
         for j in range(num_drones):
             action[j, :], _, _ = ctrl[j].computeControlFromState(control_timestep=env.CTRL_TIMESTEP,
                                                                     state=obs[j],
-                                                                    #target_pos=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2]]),
                                                                     target_pos=INIT_XYZS[j, :] + TARGET_POS[wp_counters[j], :],
                                                                     target_rpy=INIT_RPYS[j, :]
                                                                     )
@@ -214,7 +211,6 @@ def run(case = 2,
         for j in range(num_drones):
             if wp_counters[j] < (NUM_WP-1):
                 wp_counters[j] += 1
-
 
         #### Log the simulation ####################################
         for j in range(num_drones):
@@ -225,10 +221,6 @@ def run(case = 2,
                         control=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2], INIT_RPYS[j, :], np.zeros(6)])
                         )
             except:
-                # print("error in logger: TARGET_POS", TARGET_POS, wp_counters[j])
-                # print("error in logger target: ", TARGET_POS[wp_counters[j], 0:2])
-                # print("error in logger: INIT_XYZS",INIT_XYZS[j, 2])
-                # print("error in logger: INIT_RPYS", INIT_RPYS[j, :])
                 print("error in logger: ",)
 
         #### Printout ##############################################
@@ -270,4 +262,5 @@ if __name__ == "__main__":
     ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
     case = 3 # 1 2 or 3
     ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
+
     run(case = case, **vars(ARGS))

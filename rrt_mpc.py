@@ -33,7 +33,7 @@ DEFAULT_DURATION_SEC = 30
 DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
-def run(case=2, 
+def run(case, 
         drone=DEFAULT_DRONES,
         num_drones=DEFAULT_NUM_DRONES,
         physics=DEFAULT_PHYSICS,
@@ -103,7 +103,7 @@ def run(case=2,
         pos, orn = p.getBasePositionAndOrientation(obstacle_ids[i])
         obstacle_info[obstacle_ids[i]] = [obstacle_ids[i], pos, shape, orn] #INFO: Obstacle ID (float), position tuple(x, y, x, size tuple (x, y, x) and orientation tuple(quaternions)
         print(f"for obstacle {obstacle_ids[i]}, the shape is: {shape}\nand the global position is: {pos}, with orientiation {orn}\n")
-    # print(obstacle_info)
+
     positions = []
     dimensions=[] 
     for id in obstacle_info:
@@ -125,8 +125,6 @@ def run(case=2,
     if G.success:
         print("A path has been found")
         path = dijkstra(G)
-        # print(path)
-        # print(obstacles)
         plot_path(G, positions, dimensions, path)
     else:
         print("A path was not found")
@@ -149,7 +147,7 @@ def run(case=2,
         except:
             try:
                 for k in range(NUM_iter-count):
-                    TARGET_POS[count, :] = endpos #  + np.random.uniform(0, 0.1, size=(3,))
+                    TARGET_POS[count, :] = endpos
                     count+=1
             except:
                 continue
@@ -178,10 +176,10 @@ def run(case=2,
     x_init = np.zeros((12))
     x_end = np.zeros((12))
     new_path,new_rpys,new_vel, new_rpydot = [],[],[],[]
+
     # Simulate the result
     x_init[:3] = TARGET_POS[0]
 
-    
     for i in range(0,len(TARGET_POS)-N, 3):
         if i%100 ==0:
             print(i,"Steps takenout of ", len(TARGET_POS))
@@ -197,15 +195,11 @@ def run(case=2,
         new_vel.append(tuple(states[1,3:6]))
         new_rpydot.append(tuple(states[1,9:12]))
         x_init[:3] = states[-1,0:3]
-        # print(len(states))
 
     new_path = np.array(new_path).reshape(-1,3)
     new_rpys = np.array(new_rpys)
     new_vel = np.array(new_vel)
     new_rpydot = np.array(new_rpydot)
-    # for i in range(len(new_path)):
-    #     print(new_path, TARGET_POS)
-
 
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=control_freq_hz,
@@ -229,7 +223,6 @@ def run(case=2,
                     physicsClientId=env.CLIENT
                     )
             
-
     TARGET_POS = new_path
     #### Initialize the controllers ############################
     if drone in [DroneModel.CF2X, DroneModel.CF2P]:
@@ -247,7 +240,6 @@ def run(case=2,
         for j in range(num_drones):
             action[j, :], _, _ = ctrl[j].computeControlFromState(control_timestep=env.CTRL_TIMESTEP,
                                                                     state=obs[j],
-                                                                    #target_pos=np.hstack([TARGET_POS[wp_counters[j], 0:2], INIT_XYZS[j, 2]]),
                                                                     target_pos=INIT_XYZS[j, :] + TARGET_POS[wp_counters[j], :],
                                                                     target_rpy=INIT_RPYS[j, :]
                                                                     )
@@ -256,7 +248,6 @@ def run(case=2,
         for j in range(num_drones):
             if wp_counters[j] < (NUM_WP-1):
                 wp_counters[j] += 1
-
 
         #### Log the simulation ####################################
         for j in range(num_drones):
@@ -312,4 +303,5 @@ if __name__ == "__main__":
     ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
     case = 2 # 1 2 or 3
     ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
+    
     run(case = case, **vars(ARGS))

@@ -78,4 +78,8 @@ To run the RRT* path planning algorithm and the simulation just run the file `pi
 
 To instead run the Model Predictive Control algorithm on top of the found RRT* path, run the file `rrt_mpc.py`. The same process will follow.
 
+## Choice of Environment
+
+To choose a different environment, among the three available, go into either `pid_rrt.py`, or `rrt_mpc.py`, and modify the variable `case`, located at the very end of the file inside of the main block. The variable can be set to one of the three integers options `1`, `2` or `3`. Each of the three environments has a different obstacles lay-out.
+
 
