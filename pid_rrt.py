@@ -58,11 +58,11 @@ def run(case = 2,
         iterations = 500
         endpos = (-5.,5.,2.) #env 1
     if case == 2:
-        iterations = 3000
+        iterations = 4000
         endpos = (5.,-5.,2.) #env 2
     if case == 3:
         iterations = 1500
-        endpos = (8.5, -8, 2.5) #env 3
+        endpos = (8.5, -9, 2.5) #env 3
     
     H_STEP = np.sqrt((np.linalg.norm(np.array(startpos)-np.array(endpos)))**2)/10 # setting RRT resolution
 
@@ -268,6 +268,6 @@ if __name__ == "__main__":
     ARGS = parser.parse_args()
 
     ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
-    case = 2
+    case = 3 # 1 2 or 3
     ################## CHANGE WAREHOUSE ENVIRONMENT HERE ##################
     run(case = case, **vars(ARGS))

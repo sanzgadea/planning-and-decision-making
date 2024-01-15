@@ -257,7 +257,7 @@ def plot_path(G, obstacles, dimensions, path=None):
 
     lines = [(G.vertices[edge[0]], G.vertices[edge[1]]) for edge in G.edges]
     
-    lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5, alpha=.1)
+    lc = art3d.Line3DCollection(lines, zorder=3, colors='green', linewidths=.5, alpha=.4)
     ax.add_collection(lc)
 
     if path is not None:

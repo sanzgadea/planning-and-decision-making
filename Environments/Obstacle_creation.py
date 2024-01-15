@@ -10,12 +10,12 @@ def create_warehouse_skeleton(env):
                 useFixedBase=True,
                 physicsClientId=env.CLIENT
                 )
-    ceiling = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/floor.urdf'),
-                [0, 0, 10],
-                p.getQuaternionFromEuler([0,0,0]),
-                useFixedBase=True,
-                physicsClientId=env.CLIENT
-                )
+    # ceiling = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/floor.urdf'),
+    #             [0, 0, 10],
+    #             p.getQuaternionFromEuler([0,0,0]),
+    #             useFixedBase=True,
+    #             physicsClientId=env.CLIENT
+    #             )
     
     #pillars
     pillar_1 = p.loadURDF(pkg_resources.resource_filename('gym_pybullet_drones', 'planning-and-decision-making/assets/pillar.urdf'),
