@@ -17,4 +17,65 @@ creasing complexity were created:
 3) A warehouse with a wall with a gap in it and extra
 corners thereafter. In this environment, the drone needs to navigate through the hole in the wall and around a corner to find the end position.
 
+## Installation
+
+Clone the repository [gym-pybullet-drones](https://github.com/utiasDSL/gym-pybullet-drones) into your local machine and follow its installation instructions to create and activate the conda environment.
+
+```
+git clone https://github.com/utiasDSL/gym-pybullet-drones.git
+cd gym-pybullet-drones/
+
+conda create -n drones python=3.10
+conda activate drones
+
+pip3 install --upgrade pip
+pip3 install -e . # if needed, `sudo apt install build-essential` to install `gcc` and build `pybullet`
+```
+
+ Then navigate to the folder `gym_pybullet_drones` and clone or copy this repository within it. The complete path of this repository would then be `gym-pybullet-drones/gym_pybullet_drones/planning-and-decision-making/`.
+
+The folder structure should thus be as follows:
+
+```
+gym-pybullet-drones
+├── gym_pybullet_drones
+│   ├── assets
+│   ├── control
+│   ├── model
+│   ├── envs
+│   ├── examples
+│   ├── planning-and-decision-making
+│   │   ├── assets
+│   │   ├── Environments
+│   │   ├── planning
+│   │   ├── plotting
+│   │   ├── .gitignore
+│   │   ├── README.md
+│   │   ├── pid_rrt.py
+│   │   └── rrt_mp.py
+│   ├── utils
+│   └── __init__.py
+├── tests
+├── CITATION.cff
+├── LICENSE
+├── README.md
+├── build_project.sh
+├── pypi_description.md
+├── pyproject.toml
+└── .gitignore
+```
+
+Additionally, install in the drones conda environment the following packages:
+
+```
+conda activate drones
+conda install cvxpy
+```
+
+## Basic Usage
+
+To run the RRT* path planning algorithm and the simulation just run the file `pid_rrt.py`. A graph will pop after it has completed running with the searched tree shown in green and a path, if found, shown in red. After the graph is closed, the simulation is shown, where the drone will follow the found path using a PID controller. 
+
+To instead run the Model Predictive Control algorithm on top of the found RRT* path, run the file `rrt_mpc.py`. The same process will follow.
+
 
