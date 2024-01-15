@@ -1,10 +1,5 @@
 """"
 MPC controller for a 6-DOF drone. The trajectory from start to finish is shown for x,y,z and phi, theta, psi and its derivatives. 
-
-The state space matrices are based on https://arxiv.org/ftp/arxiv/papers/1908/1908.07401.pdf
-
-
-
 """
 
 import numpy as np
